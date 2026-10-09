@@ -184,3 +184,15 @@ def test_stream_settings_are_checked(tmp_path):
 def test_the_shipped_stream_client_is_a_stream():
     cfg = config.load_client("demo-stream")
     assert cfg["kind"] == "stream" and cfg["twitch"] == "" and cfg["kick"] == ""  # it watches nothing
+
+
+def test_reports_reach_the_run_page_only_inside_github_actions(monkeypatch, capsys):
+    from clipper.util import actions_notice
+
+    monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    actions_notice("Link check", "line one")
+    assert capsys.readouterr().out == ""
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    actions_notice("Link check: done, mostly", "- OK: 100% of it\n- FAILED: step two")
+    assert capsys.readouterr().out == "::notice title=Link check%3A done%2C mostly::- OK: 100%25 of it%0A- FAILED: step two\n"
+

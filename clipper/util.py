@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import shutil
 import subprocess
@@ -25,6 +26,18 @@ def setup_logging(verbose: bool = False) -> None:
         format="%(asctime)s %(message)s",
         datefmt="%H:%M:%S",
     )
+
+
+def actions_notice(title: str, text: str) -> None:
+    """Pin a short report to the top of the run's page when running in GitHub Actions; elsewhere, do nothing."""
+    if os.environ.get("GITHUB_ACTIONS") != "true":
+        return
+
+    def escape(value: str, field: bool = False) -> str:
+        value = value.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+        return value.replace(":", "%3A").replace(",", "%2C") if field else value
+
+    print(f"::notice title={escape(title, True)}::{escape(text)}", flush=True)
 
 
 def need(tool: str) -> str:

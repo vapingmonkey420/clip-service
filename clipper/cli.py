@@ -13,7 +13,7 @@ import os
 from . import config, ingest, package, parts, render, silence
 from . import pick as picker
 from .transcript import Transcript
-from .util import ClipperError, log, read_json, setup_logging, write_json
+from .util import ClipperError, actions_notice, log, read_json, setup_logging, write_json
 
 
 def load_episode(work: Path) -> dict:
@@ -128,6 +128,7 @@ def run_check(source: str, work: Path) -> int:
     if summary:
         with open(summary, "a", encoding="utf-8") as fh:
             fh.write(text + "\n")
+    actions_notice("Link check: everything worked" if ok else "Link check: something failed", "\n".join([source, *report]))
     return 0 if ok else 1
 
 

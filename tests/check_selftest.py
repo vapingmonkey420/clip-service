@@ -23,6 +23,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from make_sample import SCRIPT, STREAM_SCRIPT  # noqa: E402
 
+from clipper.util import actions_notice  # noqa: E402  (make_sample put the repo on the path)
+
 
 def words(text: str) -> list[str]:
     return re.findall(r"[a-z']+", text.lower())
@@ -89,6 +91,7 @@ def main() -> int:
     if summary:  # show the same report on the run's summary page
         with open(summary, "a", encoding="utf-8") as fh:
             fh.write(f"### {label}\n\n```\n" + "\n".join(report) + "\n```\n")
+    actions_notice(label, "\n".join(report))
     return 1 if problems else 0
 
 
