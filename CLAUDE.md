@@ -46,7 +46,7 @@ A pipeline that turns long episodes and live streams into short vertical clips f
 
 ## Things the tests cannot tell you
 
-- Real Twitch and Kick. No test contacts them, and they could not be reached from where this was written. `streams.py` is tested against the shape of yt-dlp's answers as read from the source of its 2026.08.19 release, and `hls.py` against simulated broadcasts laid out like theirs (`tests/make_hls.py`). The link check failing is the first sign of drift. Say plainly when a change to those files has not been run against the real sites.
+- Real Twitch and Kick. No test contacts them. `streams.py` is tested against the shape of yt-dlp's answers as read from the source of its 2026.08.19 release, and `hls.py` against simulated broadcasts laid out like theirs (`tests/make_hls.py`). The link check passed against both real sites from GitHub's servers on 2026-10-09, but no real broadcast had been clipped end to end by then. The link check failing is the first sign of drift. Say plainly when a change to those files has not been run against the real sites; the workflow's link check is the quickest way to do that.
 - Real camera footage and real gameplay. The samples are synthetic: flat colours, a drawn face, robotic speech, moving blocks for a game. Framing, cut detection and the camera-box rule are tuned on those and on reasoning, not on a library of real shows. Expect to adjust `reframe.py` thresholds once real episodes come through, and say so when reporting.
 - How the quick speech model copes with game sound and music. The skim was only measured on clean synthetic speech.
 - Whether a picked moment is any good. Read `clips.md` for a real episode before telling anyone the picks are fine.

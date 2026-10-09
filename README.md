@@ -42,7 +42,7 @@ The link has to lead to the file itself, or to a Twitch or Kick broadcast. Relia
 
 ## Streams on Twitch and Kick
 
-**Not yet run against the real sites.** Everything below was built and tested against a simulated broadcast served in the same layout the two sites use. Reaching Twitch and Kick themselves could not be tested where this was written, and both change without notice. Before relying on it, run the link check on a real channel.
+**Reaching the sites works; clipping a real stream is untested.** On 9 October 2026 the link check passed on GitHub's servers for a Twitch channel and a Kick channel: each listed its broadcasts, opened one, and downloaded sound and picture from it. No real broadcast has been clipped end to end yet; that was tested on simulated broadcasts laid out the way the two sites serve theirs. Both sites change without notice, so run the link check again whenever something looks off.
 
 **Check a link first.** Actions → Clips → Run workflow → paste a channel link or a broadcast link into "Or only test a Twitch or Kick link". In a couple of minutes the run's summary says, step by step, whether the channel's broadcasts can be listed, read and downloaded from GitHub's servers. Nothing is clipped.
 
@@ -80,7 +80,7 @@ A stream is hours long and mostly not worth clipping, so it is never downloaded 
 
 | What the issue says | What it means |
 |---|---|
-| refused the request, most likely its bot protection | The site blocked GitHub's server. It comes and goes. Kick, which sits behind stricter bot protection, is probably the likelier of the two. Try later, or get the file from the streamer. |
+| refused the request, most likely its bot protection | The site blocked GitHub's server. It comes and goes, and Kick, which sits behind stricter bot protection, is the likelier of the two (it let GitHub through when this was written). Try later, or get the file from the streamer. |
 | only shows this past broadcast to subscribers | The streamer restricts past broadcasts. They need to send the file. |
 | has no past broadcast at that link | It was deleted. Twitch keeps past broadcasts 7 to 60 days depending on the account, and only if the streamer has switched on "Store past broadcasts". Kick keeps them 7 days, or 30 for verified channels. |
 | still live | The broadcast has not ended. Run it again afterwards. The nightly check never files a broadcast that is still going. |
