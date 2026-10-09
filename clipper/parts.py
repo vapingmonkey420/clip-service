@@ -311,12 +311,11 @@ def check_link(source: str, workdir: Path) -> tuple[bool, list[str]]:
             state = " (live now)" if item["live"] else ""
             length = f", {clock(item['duration'])}" if item["duration"] else ""
             report.append(f"  - {item['title'] or 'Untitled'}{length}{state}: {item['url']}")
-        finished = [item for item in listing if not item["live"]]
-        if not finished:
+        if not any(not item["live"] for item in listing):
             report.append("- Nothing finished to test further. On Twitch, the streamer has to switch on 'Store past broadcasts'.")
             return False, report
-        source = finished[0]["url"]
 
+    # For a channel this takes its latest finished broadcast, skipping one still being recorded, exactly as clipping would.
     broadcast = step("read the broadcast's details", lambda: streams.resolve(source))
     if broadcast is None:
         return False, report
