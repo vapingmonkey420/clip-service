@@ -1,0 +1,35 @@
+name: New episode
+description: Turn an episode or a stream into short clips
+title: "Episode: "
+labels: ["episode"]
+body:
+  - type: input
+    id: client
+    attributes:
+      label: Client
+      description: The client's file name in clients/, without .yml
+      placeholder: acme-show
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Episode link
+      description: A Dropbox or Google Drive share link ("anyone with the link"), a direct link to the video or audio file, or a link to a past broadcast on Twitch or Kick
+      placeholder: https://www.dropbox.com/scl/fi/...
+    validations:
+      required: true
+  - type: input
+    id: title
+    attributes:
+      label: Episode title
+  - type: input
+    id: count
+    attributes:
+      label: Number of clips
+      description: Leave empty for the client's usual number
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Anything the picker should know, such as moments to look for or topics to skip

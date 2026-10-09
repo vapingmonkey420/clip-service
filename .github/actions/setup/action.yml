@@ -1,0 +1,35 @@
+name: Set up the clip pipeline
+description: Python, ffmpeg, the Python packages, and (only if needed) the Claude CLI.
+
+inputs:
+  install-claude-cli:
+    description: "'true' to install the Claude CLI, which is how a Claude subscription token is used"
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v7
+      with:
+        python-version: "3.12"
+        cache: pip
+
+    - name: Install ffmpeg
+      shell: bash
+      run: |
+        if ! command -v ffmpeg >/dev/null; then
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends ffmpeg
+        fi
+        ffmpeg -hide_banner -version | head -n 1
+
+    - name: Install Python packages
+      shell: bash
+      run: pip install --quiet --disable-pip-version-check -r requirements.txt
+
+    - name: Install the Claude CLI
+      if: inputs.install-claude-cli == 'true'
+      shell: bash
+      run: |
+        npm install --global --silent --prefix "$HOME/.npm-global" @anthropic-ai/claude-code
+        echo "$HOME/.npm-global/bin" >> "$GITHUB_PATH"

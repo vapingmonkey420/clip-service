@@ -1,0 +1,83 @@
+# Copy this file to clients/<short-name>.yml (lowercase letters, digits and dashes).
+# The short name is what goes in the "Client" field of an episode request.
+# Only `name` is required. Delete anything you do not need; the defaults are shown.
+
+name: The Example Show
+
+# show   = talk that is transcribed from start to finish (podcasts, interviews).
+# stream = hours of live stream. It is skimmed first, and only the promising
+#          stretches are fetched and looked at closely. Use it for anything over two hours.
+kind: show
+
+# Who reviews the clips. The pipeline does not use this; your operator prompts do.
+contact: host@example.com
+
+# The picker reads these four. Two or three plain sentences each is plenty.
+about: >
+  Weekly interviews with early-stage founders. Listeners are first-time founders
+  who want practical detail, not inspiration.
+voice: Direct and practical. No hype, no emoji.
+avoid:
+  - politics
+  - anything about a guest's fundraising terms
+notes: >
+  Keep a running record here of what has worked and what has not, for example:
+  clips that open on a number do best; the host's monologues underperform.
+
+# Added to every clip's post text, ahead of the per-clip ones.
+hashtags: ["#founders", "#startups"]
+
+# Optional: the show's podcast RSS feed. The nightly run opens a request for each
+# new episode it finds there (episodes from the last 7 days only).
+feed: ""
+
+# Optional: a Twitch and/or Kick channel name. The nightly run opens a request for each
+# new past broadcast it finds there. A channel is only watched once `permission` says
+# how you know you may clip it, for example "Client agreement signed 2026-10-12" or
+# "Clipping program rules: <link>".
+twitch: ""
+kick: ""
+permission: ""
+
+# Optional: cover art for audio-only episodes, as a path inside this repo.
+cover: ""
+
+clips:
+  count: 8            # how many per episode
+  min_seconds: 20
+  max_seconds: 60
+  layout: auto        # auto | crop (one person) | stack (two people) | fit (whole picture) | split (camera over gameplay)
+  tighten: true       # shorten long pauses inside a clip (off by default for kind: stream)
+  max_pause: 0.6      # pauses longer than this many seconds get shortened
+
+captions:
+  show: true
+  font: Poppins       # or "Poppins ExtraBold"; add other .ttf files to assets/fonts
+  size: 84            # letter size in pixels on the 1080-wide frame
+  uppercase: true
+  max_words: 3        # words on screen at once
+  color: "#FFFFFF"
+  highlight: "#FFD60A"   # the word being spoken
+  outline: "#000000"
+
+title:
+  show: intro         # intro (first few seconds) | always | off
+  seconds: 3.5
+
+transcribe:
+  model: small.en     # tiny.en and base.en are faster and rougher; medium.en is slower and better
+  language: en
+  vocabulary: []      # names and terms to spell right, e.g. ["CrowdStrike", "Dana Okafor"]
+  replace: {}         # fix-ups for words it keeps getting wrong, e.g. {"crowd strike": "CrowdStrike"}
+
+picker:
+  model: claude-sonnet-5-5
+
+# Only used for kind: stream and for Twitch or Kick links.
+stream:
+  scan_model: tiny.en   # the quick speech model that skims the whole stream
+  max_hours: 10         # only this much of a stream is skimmed
+  min_minutes: 15       # the nightly check ignores broadcasts shorter than this
+  shortlist: 0          # stretches to look at closely; 0 works it out from clips.count
+  max_height: 1080      # the sharpest picture to fetch
+  viewer_clips: true    # use clips viewers made as hints about where the moments are

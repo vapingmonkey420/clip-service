@@ -1,0 +1,12 @@
+# Used by the tests and the workflow's self-test. Not a real client.
+name: The Demo Stream
+kind: stream
+about: A made-up streamer playing a ranked shooter and talking to chat. Used to test the stream pipeline.
+voice: Casual and upbeat.
+hashtags: ["#gaming"]
+clips:
+  count: 3
+  min_seconds: 8
+  max_seconds: 30
+transcribe:
+  model: tiny.en

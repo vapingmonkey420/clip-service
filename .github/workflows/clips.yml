@@ -1,0 +1,238 @@
+name: Clips
+
+# Three ways in:
+#   1. Open an issue with the "New episode" form.   -> clips for that episode or stream
+#   2. Every night.                                 -> anything still waiting, plus new feed episodes
+#                                                      and new broadcasts on watched Twitch and Kick channels
+#   3. Actions tab > Clips > Run workflow.          -> catch up now, redo an issue, check a link, or run the self-test
+
+on:
+  issues:
+    types: [opened, reopened]
+  schedule:
+    # 08:23 UTC: 3:23 am in Chicago in summer, 2:23 am in winter.
+    - cron: "23 8 * * *"
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "Redo one issue: its number. Leave everything empty to catch up on whatever is waiting."
+        required: false
+        type: string
+      client:
+        description: "Or start an episode here: client name (the file in clients/, without .yml)"
+        required: false
+        type: string
+      source:
+        description: "Link to that episode's file, or to a Twitch or Kick broadcast"
+        required: false
+        type: string
+      title:
+        description: "That episode's title"
+        required: false
+        type: string
+      check:
+        description: "Or only test a Twitch or Kick link (a channel or one broadcast): can it be reached from here?"
+        required: false
+        type: string
+      selftest:
+        description: "Run the self-test instead: builds a sample episode and a sample stream and clips them"
+        required: false
+        type: boolean
+        default: false
+
+# Each job asks for exactly what it needs.
+permissions: {}
+
+# The jobs name ubuntu-24.04 instead of ubuntu-latest on purpose: its ffmpeg (6.1) is the
+# version the pipeline was tested with. Run the self-test before moving to a newer image.
+
+jobs:
+  plan:
+    name: Find work
+    if: github.event_name != 'workflow_dispatch' || (!inputs.selftest && inputs.check == '')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      issues: write
+    outputs:
+      issues: ${{ steps.plan.outputs.issues }}
+      count: ${{ steps.plan.outputs.count }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      # Only what finding work needs. yt-dlp is here because the nightly run asks Twitch and Kick for new broadcasts.
+      - run: pip install --quiet --disable-pip-version-check pyyaml requests "yt-dlp[default,curl-cffi]"
+      - id: plan
+        run: python -m clipper.ci plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+
+  clip:
+    name: "Clip #${{ matrix.issue }}"
+    needs: plan
+    if: needs.plan.outputs.count != '0'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    permissions:
+      contents: write # to attach clips to a release
+      issues: write
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        issue: ${{ fromJson(needs.plan.outputs.issues) }}
+    concurrency:
+      group: clips-issue-${{ matrix.issue }}
+      cancel-in-progress: false
+    env:
+      ISSUE: ${{ matrix.issue }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup
+        with:
+          # The API key, when present, is used directly; the CLI is only for a subscription token.
+          install-claude-cli: ${{ secrets.ANTHROPIC_API_KEY == '' && secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+
+      - name: Read the request
+        id: start
+        run: python -m clipper.ci start --issue "$ISSUE"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+
+      - name: Reuse the speech models from earlier runs
+        if: steps.start.outputs.skip != 'true'
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/huggingface
+          key: speech-model-${{ steps.start.outputs.model }}
+
+      # For a stream this fetches only its sound and skims it. The picture comes later, and only the stretches worth it.
+      - name: Get the episode
+        if: steps.start.outputs.skip != 'true'
+        run: python -m clipper ingest
+
+      # The two "choose" steps are the only ones that see a Claude credential, and they see no GitHub token.
+      - name: Shortlist stretches (long streams only)
+        if: steps.start.outputs.skip != 'true'
+        run: python -m clipper shortlist
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+      - name: Transcribe
+        if: steps.start.outputs.skip != 'true'
+        run: python -m clipper transcribe
+
+      - name: Choose the moments
+        if: steps.start.outputs.skip != 'true'
+        run: python -m clipper pick
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+      - name: Render
+        if: steps.start.outputs.skip != 'true'
+        run: python -m clipper render
+
+      - name: Publish
+        if: steps.start.outputs.skip != 'true'
+        run: python -m clipper.ci publish --issue "$ISSUE"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+
+      - name: Report a failure on the issue
+        if: failure()
+        run: python -m clipper.ci fail --issue "$ISSUE"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+
+  check:
+    name: Check a link
+    if: github.event_name == 'workflow_dispatch' && inputs.check != '' && !inputs.selftest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup
+
+      # The link is handed over as data, never pasted into the command line.
+      - name: Try to reach it
+        run: python -m clipper check --source "$LINK"
+        env:
+          LINK: ${{ inputs.check }}
+
+  selftest:
+    name: Self-test
+    if: github.event_name == 'workflow_dispatch' && inputs.selftest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup
+        with:
+          install-claude-cli: ${{ secrets.ANTHROPIC_API_KEY == '' && secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+
+      - name: Run the unit tests
+        run: |
+          pip install --quiet --disable-pip-version-check pytest
+          python -m pytest -q
+
+      - name: Build a sample episode
+        run: python tests/make_sample.py work/sample.mp4
+
+      - name: Clip it
+        run: python -m clipper run --client demo --source work/sample.mp4 --title "Self-test" --work work
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+      - name: Build a sample stream, laid out the way Twitch serves one
+        run: |
+          python tests/make_sample.py work/stream.mp4 --mode stream
+          python tests/make_hls.py work/stream.mp4 work/vod
+
+      # Served from this machine, so this tests everything about clipping a stream except reaching Twitch or Kick.
+      - name: Clip the stream
+        run: |
+          python -m http.server 8765 --bind 127.0.0.1 --directory work > /dev/null 2>&1 &
+          sleep 2
+          python -m clipper run --client demo-stream --source http://127.0.0.1:8765/vod/master.m3u8 --title "Self-test stream" --work work/stream
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+      - name: Check the results
+        run: |
+          python tests/check_selftest.py work
+          python tests/check_selftest.py work/stream --sample stream
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: selftest-clips
+          path: |
+            work/out
+            work/stream/out
+          retention-days: 3

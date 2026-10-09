@@ -1,0 +1,13 @@
+# Used by the self-test and the test suite. Safe to leave in place.
+name: The Demo Show
+about: A two-host show about growing a podcast. Listeners are people starting their own show.
+voice: Plain and practical. No hype.
+hashtags: ["#podcasting"]
+
+clips:
+  count: 2
+  min_seconds: 8
+  max_seconds: 30
+
+transcribe:
+  model: tiny.en

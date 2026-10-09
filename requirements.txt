@@ -1,0 +1,12 @@
+# Versions the pipeline was tested with. Bump deliberately, then run the self-test.
+faster-whisper==1.2.1          # speech to text with word timings
+opencv-python-headless==5.0.0.93   # face detection for framing
+numpy>=2.0
+fonttools==4.66.1              # measures caption text against the real font
+PyYAML==6.0.3
+requests==2.34.2
+anthropic==1.11.0              # Claude API, used when ANTHROPIC_API_KEY is set
+gdown==6.4.1                   # Google Drive share links
+# Twitch and Kick broadcasts, and the last resort for links to a page rather than a file. Not pinned on purpose:
+# when one of those sites changes, the fix is a newer yt-dlp, and every run installs the newest.
+yt-dlp[default,curl-cffi]>=2026.8.19

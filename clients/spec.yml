@@ -1,0 +1,13 @@
+# For pitch samples: two clips from a prospect's public episode, to send to that show's
+# owner as a taste of the service. Never post these anywhere.
+name: Sample
+about: A sample cut for a show that is not yet a client. Pick the two moments most likely to make the host want more.
+voice: Neutral and plain.
+
+clips:
+  count: 2
+  min_seconds: 20
+  max_seconds: 45
+
+title:
+  show: intro
